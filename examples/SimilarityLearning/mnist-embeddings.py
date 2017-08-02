@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # File: mnist-embeddings.py
 # Author: PatWie <mail@patwie.com>
-
 import numpy as np
 import os
 
@@ -20,6 +19,7 @@ try:
     import matplotlib
     from matplotlib import offsetbox
     import matplotlib.pyplot as plt
+    plt.switch_backend('agg')
     MATPLOTLIB_AVAIBLABLE = True
 except ImportError:
     MATPLOTLIB_AVAIBLABLE = False
@@ -184,7 +184,9 @@ def visualize(model_path, model, algo_name):
         if offset == NUM_BATCHES:
             break
 
-    plt.figure()
+    print('MATPLOTLIB_AVAILABLE: '+str(MATPLOTLIB_AVAIBLABLE))
+    plt.ioff()
+    fig = plt.figure()
     ax = plt.subplot(111)
     ax_min = np.min(embed, 0)
     ax_max = np.max(embed, 0)
@@ -205,7 +207,7 @@ def visualize(model_path, model, algo_name):
     plt.xticks([]), plt.yticks([])
     plt.title('Embedding using %s-loss' % algo_name)
     plt.savefig('%s.jpg' % algo_name)
-
+    plt.close(fig)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
