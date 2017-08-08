@@ -83,3 +83,9 @@ docs/_build/
 target/
 *.dat
 
+
+# Data
+examples/SimilarityLearning/data/*
+
+# Train Log
+examples/SimilarityLearning/train_log/*
