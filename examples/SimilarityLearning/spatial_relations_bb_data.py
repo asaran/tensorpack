@@ -51,7 +51,7 @@ class DatasetPairs(Dataset):
 
     def pick(self, label):
         idx = self.rng.randint(len(self.img_dict[label]))
-        return self.img_dict[label][idx].astype(np.float32), self.bb_dict[label[idx]]
+        return self.img_dict[label][idx].astype(np.float32), self.bb_dict[label][idx]
 
     def get_data(self):
         while True:
