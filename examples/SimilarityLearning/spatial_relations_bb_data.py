@@ -8,6 +8,7 @@ from tensorpack.dataflow import BatchData
 import sys
 sys.path.append('utils/')
 from genome import Dataset
+import random
 
 def get_test_data(pathFile,batch=64):
     ds = Dataset(pathFile, 'test')
@@ -19,7 +20,7 @@ def get_test_data(pathFile,batch=64):
 def get_digits_by_label(images, labels, bb):
     img_data = []
     bb_data = []
-    for clazz in range(0, 19):
+    for clazz in range(0, 16):
         #clazz_filter = np.where(labels == clazz)
         #data_dict.append(list(images[clazz_filter].reshape((-1, 225, 225))))
 
@@ -48,18 +49,22 @@ class DatasetPairs(Dataset):
         # now categorize these digits
         self.img_dict, self.bb_dict = get_digits_by_label(self.images, self.labels, self.bb)
         assert(len(self.img_dict)==len(self.bb_dict))
+        #for i in range(len(self.img_dict)):
+        #    print(str(i)+': '+str(len(self.img_dict[i])))
 
     def pick(self, label):
+        #print(label)
         idx = self.rng.randint(len(self.img_dict[label]))
+        #idx = random.randint(0,len(self.img_dict[label]))
         return self.img_dict[label][idx].astype(np.float32), self.bb_dict[label][idx]
 
     def get_data(self):
         while True:
             y = self.rng.randint(2)
             if y == 0:
-                pick_label, pick_other = self.rng.choice(19, size=2, replace=False)
+                pick_label, pick_other = self.rng.choice(16, size=2, replace=False)
             else:
-                pick_label = self.rng.randint(19)
+                pick_label = self.rng.randint(16)
                 pick_other = pick_label
             
             a = self.pick(pick_label)
@@ -71,7 +76,7 @@ class DatasetPairs(Dataset):
 class DatasetTriplets(DatasetPairs):
     def get_data(self):
         while True:
-            pick_label, pick_other = self.rng.choice(19, size=2, replace=False)
+            pick_label, pick_other = self.rng.choice(16, size=2, replace=False)
 
             a = self.pick(pick_label)
             b = self.pick(pick_label)

@@ -55,26 +55,18 @@ class Dataset(RNGDataFlow):
             im = cv2.resize(im,(224,224))
             self.images.append(im)
             self.labels.append(int(element['label']))
-            self.bb.append(element['bb'])
+            self.bb.append(np.array(element['bb']))
 
     def size(self):
         return len(self.labels)
-
-    """
+    
     def get_data(self):
-        idxs = np.arange(len(self.imglist))
+        idxs = np.arange(len(self.images))
         if self.shuffle:
             self.rng.shuffle(idxs)
 
         for k in idxs:
-            fname, label = self.imglist[k]
-
-            im = cv2.imread(fname, cv2.IMREAD_COLOR)
-            assert im is not None, fname
-            if im.ndim == 2:
-                im = np.expand_dims(im, 2).repeat(3, 2)
-            yield [im, int(label)]
-    """
+            yield [self.images[k], self.bb[k], self.labels[k]]
 
 if __name__ == '__main__':
     ds = Dataset('/home/asaran/research/tensorpack/examples/SimilarityLearning/data/genome_train.json', 'train',

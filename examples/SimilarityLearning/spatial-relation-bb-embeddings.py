@@ -76,7 +76,7 @@ class EmbeddingModel(ModelDesc):
                 #for j in range(list_split):
                 #net = tf.squeeze(net)
                 #net = tf.concat([tf.squeeze(net_el) for net_el in net], 0)
-                net = tf.reshape(net,[tf.shape(net)[1],4104])
+                net = tf.reshape(net,[tf.shape(net)[1]*list_split,4104])
                 print('Printing reshaped..')
                 print(net.get_shape())
             else:
@@ -110,7 +110,7 @@ class EmbeddingModel(ModelDesc):
 class SiameseModel(EmbeddingModel):
     @staticmethod
     def get_data():
-        ds = DatasetPairs('data/train.txt','train')
+        ds = DatasetPairs('data/genome_train.json','train')
         ds = AugmentImageComponent(ds, [imgaug.Resize((224, 224))])
         ds = BatchData(ds, 64 // 2)
         return ds

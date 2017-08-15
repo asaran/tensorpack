@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
 	relation_dict = {
                 'at': 0, 
-                'behind': 1,
+                #'behind': 1,
                 'across': 2,
                 'near': 3,
                 'next to': 3,
@@ -22,7 +22,7 @@ if __name__ == '__main__':
                 'inside': 7,
                 'in': 7,
                 'over': 8,
-                'against': 9,
+                #'against': 9,
                 'under': 10,
                 'underneath': 10,
                 'below': 10,
@@ -31,9 +31,9 @@ if __name__ == '__main__':
                 'outside': 13,
                 'on': 14,
                 'right of': 15,
-                'left of': 16,
-                'in front of': 17,
-                'along': 18
+                'left of': 9,
+                #'in front of': 17,
+                'along': 1
                 }
 
         with open('/home/asaran/research/spatial-relations-attention/data/relevant_relationships_bb_att.json') as relfile:
