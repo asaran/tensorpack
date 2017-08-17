@@ -3,6 +3,8 @@
 # File: embedding_data.py
 # Author: tensorpack contributors
 
+from tensorpack import *
+
 import numpy as np
 from tensorpack.dataflow import BatchData
 import sys
