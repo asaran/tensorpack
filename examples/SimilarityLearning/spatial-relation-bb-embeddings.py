@@ -11,6 +11,7 @@ from tensorpack.tfutils.summary import add_moving_summary
 import argparse
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
+import random
 
 from spatial_relations_bb_data import get_test_data, DatasetPairs, DatasetTriplets
 
@@ -180,6 +181,10 @@ class TripletModel(EmbeddingModel):
     def _build_graph(self, inputs):
         print(len(inputs))
         img_a, bb_a, img_p, bb_p, img_n, bb_n = inputs
+        # scaling the bb coordinates wrt image
+        # bb_a = [bb*224 for bb in bb_a]
+        # bb_p = [bb*224 for bb in bb_p]
+        # bb_n = [bb*224 for bb in bb_n]
         a_embed, p_embed, n_embed = self.embed([img_a, img_p, img_n,], [bb_a, bb_p, bb_n])
 
         with tf.variable_scope(tf.get_variable_scope(), reuse=True):
@@ -262,8 +267,6 @@ def visualize(model_path, model, algo_name):
     ax_min = np.min(embed, 0)
     ax_max = np.max(embed, 0)
 
-    print(ax_min)
-
     ax_dist_sq = np.sum((ax_max - ax_min)**2)
     ax.axis('off')
 
@@ -284,7 +287,9 @@ def visualize(model_path, model, algo_name):
 
     x = np.arange(N)
     ys = [i+x+(i*x)**2 for i in range(N)]
-    c = cm.rainbow(np.linspace(0, 1, len(ys)))
+    #c = cm.rainbow(np.linspace(0, 1, len(ys)))
+    c = ['r','b', 'c', 'g','yellow','blueviolet','lightblue','darkgreen','orange','mediumvioletred','lightcoral',
+            'olive','brown','dimgray','steelblue','k']
 
     for i in relation_labels:
         circles.append(mpatches.Circle((0,0),1,color=c[i]))
@@ -309,6 +314,77 @@ def visualize(model_path, model, algo_name):
     plt.savefig('%s.jpg' % algo_name)
     plt.close(fig)
 
+def evaluate_random(model_path, model, algo_name):
+    ensemble_size = 5
+    correct = 0
+    total = 0
+    BATCH_SIZE = 64
+    NUM_BATCHES = 100
+
+    pred = OfflinePredictor(PredictConfig(
+            session_init=get_model_loader(model_path),
+            model=model(),
+            input_names=['input','bb'],
+            output_names=['emb']))
+
+    # get train data
+    dt = get_test_data('data/genome_train.json')
+    dt.reset_state()
+    print('loaded training data')
+
+    train_data = {}
+    for offset,dp in enumerate(dt.get_data()):
+        print(offset)
+        img, bb, label = dp
+        prediction = pred([img, bb])
+        embedding = prediction[0]
+        for i in range(BATCH_SIZE):
+            gt = label[i]
+            if gt not in train_data:
+                train_data[gt] = [embedding[i]]
+            else:
+                train_data[gt].append(embedding[i])
+        offset += 1
+        if offset == NUM_BATCHES:
+            break
+    
+    for label in train_data:
+        print(str(label) + ': '+ str(len(train_data[label])))
+        
+    ds = get_test_data('data/genome_test.json')
+    ds.reset_state()
+    print('loaded test data')
+
+    for dp in ds.get_data():
+        img, bb, label = dp
+        embed_test_batch = pred([img, bb])[0]
+        dist = {}
+        for i in range(BATCH_SIZE):
+            embed_test = embed_test_batch[i]
+            # choose an image randomly from every class
+            for l in train_data:
+                dist[l] = 0
+                r = random.sample(range(0,len(train_data[l])), ensemble_size)
+                for sample in r:
+                    dist[l] += np.linalg.norm(embed_test-train_data[l][sample])
+                dist[l] = dist[l]/ensemble_size
+
+            min_value = min(dist.itervalues())
+            min_keys = [k for k in dist if dist[k] == min_value]
+
+            if len(min_keys)==1:
+                pred_class = min_keys[0]
+            else:
+                pred_class = min_keys[random.randint(0,len(min_keys)-1)]
+
+            if pred_class == label[i]:
+                correct += 1
+            total += 1
+
+    return correct, total
+
+                                                                                                                                
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.')
@@ -316,6 +392,8 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--algorithm', help='used algorithm', type=str,
                         choices=["siamese", "cosine", "triplet", "softtriplet"])
     parser.add_argument('--visualize', help='export embeddings into an image', action='store_true')
+    #parser.add_argument('--dim', help='dimensionality of the embedding space', type=int)
+    parser.add_argument('--evaluate', help = 'compute accuracy', action='store_true')
     args = parser.parse_args()
 
     ALGO_CONFIGS = {"siamese": SiameseModel,
@@ -328,6 +406,9 @@ if __name__ == '__main__':
     with change_gpu(args.gpu):
         if args.visualize:
             visualize(args.load, ALGO_CONFIGS[args.algorithm], args.algorithm)
+        elif args.evaluate:
+            correct, total = evaluate_random(args.load, ALGO_CONFIGS[args.algorithm], args.algorithm)
+            print('accuracy: '+str(float(correct)/total) + '% = ' + str(correct) + '/' +str(total))
         else:
             config = get_config(ALGO_CONFIGS[args.algorithm], args.algorithm)
             if args.load:

@@ -8,6 +8,7 @@ from tensorpack.dataflow import BatchData
 import sys
 sys.path.append('utils/')
 from sun09 import SUN09
+from tensorpack import *
 
 def get_test_data(pathFile,batch=64):
     ds = SUN09(pathFile, 'test')

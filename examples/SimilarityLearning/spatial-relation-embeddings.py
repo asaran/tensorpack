@@ -19,6 +19,7 @@ try:
     import matplotlib
     from matplotlib import offsetbox
     import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
     plt.switch_backend('agg')
     MATPLOTLIB_AVAIBLABLE = True
 except ImportError:
@@ -189,18 +190,20 @@ def visualize(model_path, model, algo_name):
 
     NUM_BATCHES = 6
     BATCH_SIZE = 64
-    images = np.zeros((BATCH_SIZE * NUM_BATCHES, 224, 224))  # the used digits
+    #images = np.zeros((BATCH_SIZE * NUM_BATCHES, 224, 224))  # the used digits
     embed = np.zeros((BATCH_SIZE * NUM_BATCHES, 2))  # the actual embeddings in 2-d
+    labels = np.zeros((BATCH_SIZE * NUM_BATCHES)) # true labels
 
     # get only the embedding model data (MNIST test)
-    ds = get_test_data('data/test.txt')
+    ds = get_test_data('data/train.txt')
     ds.reset_state()
 
     for offset, dp in enumerate(ds.get_data()):
-        digit, label = dp
-        prediction = pred([digit])[0]
+        img, label = dp
+        prediction = pred([img])[0]
         embed[offset * BATCH_SIZE:offset * BATCH_SIZE + BATCH_SIZE, ...] = prediction
-        images[offset * BATCH_SIZE:offset * BATCH_SIZE + BATCH_SIZE, ...] = digit
+        #images[offset * BATCH_SIZE:offset * BATCH_SIZE + BATCH_SIZE, ...] = digit
+        labels[offset * BATCH_SIZE:offset * BATCH_SIZE + BATCH_SIZE, ...] = label
         offset += 1
         if offset == NUM_BATCHES:
             break
@@ -214,18 +217,32 @@ def visualize(model_path, model, algo_name):
 
     ax_dist_sq = np.sum((ax_max - ax_min)**2)
     ax.axis('off')
+
+    # dictionary of labels
+    relation_labels = {0:'below', 1:'across from', 2:'under', 3:'left of', 4:'behind', 
+            5:'on', 6:'right of', 7:'in', 8:'in front of', 9:'above'}
+    circles = []
+    classes = []
+    c = ['r','g','b','c','yellow','blueviolet','lightblue','darkgreen','orange','brown']
+
+    for i in relation_labels:
+        circles.append(mpatches.Circle((0,0),1,color=c[i]))
+        classes.append(relation_labels[i])
+
     shown_images = np.array([[1., 1.]])
     for i in range(embed.shape[0]):
         dist = np.sum((embed[i] - shown_images)**2, 1)
         if np.min(dist) < 3e-4 * ax_dist_sq:     # don't show points that are too close
             continue
         shown_images = np.r_[shown_images, [embed[i]]]
-        imagebox = offsetbox.AnnotationBbox(offsetbox.OffsetImage(np.reshape(images[i, ...], [224, 224]),
-                                            zoom=0.6, cmap=plt.cm.gray_r), xy=embed[i], frameon=False)
-        ax.add_artist(imagebox)
+        plt.scatter(embed[i][0], embed[i][1], color=c[int(labels[i])])
+        #imagebox = offsetbox.AnnotationBbox(offsetbox.OffsetImage(np.reshape(images[i, ...], [224, 224]),
+        #                                    zoom=0.6, cmap=plt.cm.gray_r), xy=embed[i], frameon=False)
+        #ax.add_artist(imagebox)
 
-    plt.axis([ax_min[0], ax_max[0], ax_min[1], ax_max[1]])
+    plt.axis([ax_min[0]*2, ax_max[0]*2, ax_min[1]*2, ax_max[1]*2])
     plt.xticks([]), plt.yticks([])
+    plt.legend(circles, classes, loc='lower left')
     plt.title('Embedding using %s-loss' % algo_name)
     plt.savefig('%s.jpg' % algo_name)
     plt.close(fig)

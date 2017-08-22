@@ -57,9 +57,11 @@ if __name__ == '__main__':
                         subj_bb = qas['subject_bb']
                         height = qas['height']
                         width = qas['width']
+                        # object = qas['object']
+                        # subject = qas['subject']
                         bb_list = [int(obj_bb[0]/width), int(obj_bb[1]/height), int(obj_bb[2]/width), int(obj_bb[3]/height),\
                                 int(subj_bb[0]/width), int(subj_bb[1]/height), int(subj_bb[2]/width), int(subj_bb[3]/height)]
-                    
+                        
                         img_path = data_folder + str(img_id) + '.jpg'
                         for rel in relation_dict:
                             if rel in relation:
