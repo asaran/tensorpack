@@ -27,9 +27,11 @@ try:
 except ImportError:
     MATPLOTLIB_AVAIBLABLE = False
 
+embed_dim=2 
 
 class EmbeddingModel(ModelDesc):
-    def embed(self, x, b, nfeatures=2):
+    global embed_dim
+    def embed(self, x, b, nfeatures=embed_dim):
 
         """Embed all given tensors into an nfeatures-dim space.  """
         list_split = 0
@@ -69,7 +71,7 @@ class EmbeddingModel(ModelDesc):
             print('Printing fc shape...')
             print(net.get_shape())
             if list_split > 0:
-                fc6_embed = tf.split(net, list_split, 0) 
+                fc6_embed = tf.split(net, list_split, 0)
                 bb_float = tf.cast(b, tf.float32)
                 net = tf.concat(axis=2, values=[fc6_embed,bb_float])
                 print('Printing multi bb shape..')
@@ -179,16 +181,17 @@ class TripletModel(EmbeddingModel):
         return symbf.triplet_loss(a, p, n, 5., extra=True, scope="loss")
 
     def _build_graph(self, inputs):
+        global embed_dim
         print(len(inputs))
         img_a, bb_a, img_p, bb_p, img_n, bb_n = inputs
         # scaling the bb coordinates wrt image
-        # bb_a = [bb*224 for bb in bb_a]
-        # bb_p = [bb*224 for bb in bb_p]
-        # bb_n = [bb*224 for bb in bb_n]
-        a_embed, p_embed, n_embed = self.embed([img_a, img_p, img_n,], [bb_a, bb_p, bb_n])
+        bb_a = tf.scalar_mul(224,bb_a)
+        bb_p = tf.scalar_mul(224,bb_p)
+        bb_n = tf.scalar_mul(224,bb_n)
+        a_embed, p_embed, n_embed = self.embed([img_a, img_p, img_n,], [bb_a, bb_p, bb_n], embed_dim)
 
         with tf.variable_scope(tf.get_variable_scope(), reuse=True):
-            tf.identity(self.embed(inputs[0], inputs[1]), name="emb")
+            tf.identity(self.embed(inputs[0], inputs[1], embed_dim), name="emb")
 
         print('Printing shape of embeddings..')
         print(a_embed.get_shape())
@@ -315,11 +318,12 @@ def visualize(model_path, model, algo_name):
     plt.close(fig)
 
 def evaluate_random(model_path, model, algo_name):
-    ensemble_size = 5
+    global embed_dim
+    ensemble_size = 15
     correct = 0
     total = 0
     BATCH_SIZE = 64
-    NUM_BATCHES = 100
+    NUM_BATCHES = 50000
 
     pred = OfflinePredictor(PredictConfig(
             session_init=get_model_loader(model_path),
@@ -334,7 +338,7 @@ def evaluate_random(model_path, model, algo_name):
 
     train_data = {}
     for offset,dp in enumerate(dt.get_data()):
-        print(offset)
+        #print(offset)
         img, bb, label = dp
         prediction = pred([img, bb])
         embedding = prediction[0]
@@ -347,10 +351,13 @@ def evaluate_random(model_path, model, algo_name):
         offset += 1
         if offset == NUM_BATCHES:
             break
-    
+
+    total_tr_data = 0 
     for label in train_data:
         print(str(label) + ': '+ str(len(train_data[label])))
-        
+        total_tr_data += len(train_data[label])
+    print('total training data: ' + str(total_tr_data))
+
     ds = get_test_data('data/genome_test.json')
     ds.reset_state()
     print('loaded test data')
@@ -386,13 +393,14 @@ def evaluate_random(model_path, model, algo_name):
                                                                                                                                 
 
 if __name__ == '__main__':
+    global embed_dim
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.')
     parser.add_argument('--load', help='load model')
     parser.add_argument('-a', '--algorithm', help='used algorithm', type=str,
                         choices=["siamese", "cosine", "triplet", "softtriplet"])
     parser.add_argument('--visualize', help='export embeddings into an image', action='store_true')
-    #parser.add_argument('--dim', help='dimensionality of the embedding space', type=int)
+    parser.add_argument('--dim', help='dimensionality of the embedding space', type=int)
     parser.add_argument('--evaluate', help = 'compute accuracy', action='store_true')
     args = parser.parse_args()
 
@@ -403,12 +411,15 @@ if __name__ == '__main__':
 
     logger.auto_set_dir(name=args.algorithm)
 
+    if args.dim:
+        embed_dim = args.dim
+
     with change_gpu(args.gpu):
         if args.visualize:
             visualize(args.load, ALGO_CONFIGS[args.algorithm], args.algorithm)
         elif args.evaluate:
             correct, total = evaluate_random(args.load, ALGO_CONFIGS[args.algorithm], args.algorithm)
-            print('accuracy: '+str(float(correct)/total) + '% = ' + str(correct) + '/' +str(total))
+            print('accuracy: '+str(float(correct)*100/total) + '% = ' + str(correct) + '/' +str(total))
         else:
             config = get_config(ALGO_CONFIGS[args.algorithm], args.algorithm)
             if args.load:
