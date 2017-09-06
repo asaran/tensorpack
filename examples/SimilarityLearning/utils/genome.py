@@ -9,6 +9,7 @@ import numpy as np
 from six.moves import range, zip, map
 import cv2
 import json
+import random
 
 from tensorpack.utils import logger
 from tensorpack.utils.fs import download, get_dataset_path
@@ -44,7 +45,8 @@ class Dataset(RNGDataFlow):
 
         idxs = np.arange(len(data))
         if self.shuffle:
-            self.rng.shuffle(idxs)
+            #self.rng.shuffle(idxs)
+            random.shuffle(idxs)
 
         for k in idxs:
             element = data[k]
@@ -63,14 +65,15 @@ class Dataset(RNGDataFlow):
     def get_data(self):
         idxs = np.arange(len(self.images))
         if self.shuffle:
-            self.rng.shuffle(idxs)
+            #self.rng.shuffle(idxs)
+            random.shuffle(idxs)
 
         for k in idxs:
             yield [self.images[k], self.bb[k], self.labels[k]]
 
 if __name__ == '__main__':
     ds = Dataset('/home/asaran/research/tensorpack/examples/SimilarityLearning/data/genome_train.json', 'train',
-                  shuffle=False)
+                  shuffle=True)
     ds.reset_state()
     for k in ds.get_data():
         from IPython import embed
