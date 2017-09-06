@@ -15,6 +15,8 @@ import random
 
 from spatial_relations_bb_data import get_test_data, DatasetPairs, DatasetTriplets
 
+embed_dim = 2
+
 MATPLOTLIB_AVAIBLABLE = False
 try:
     import matplotlib
@@ -25,9 +27,7 @@ try:
     plt.switch_backend('agg')
     MATPLOTLIB_AVAIBLABLE = True
 except ImportError:
-    MATPLOTLIB_AVAIBLABLE = False
-
-embed_dim=2 
+    MATPLOTLIB_AVAIBLABLE = False 
 
 class EmbeddingModel(ModelDesc):
     global embed_dim
@@ -108,7 +108,7 @@ class EmbeddingModel(ModelDesc):
         return embeddings
 
     def _get_optimizer(self):
-        lr = symbf.get_scalar_var('learning_rate', 1e-4, summary=True)
+        lr = symbf.get_scalar_var('learning_rate', 1e-3, summary=True)
         return tf.train.GradientDescentOptimizer(lr)
 
 
@@ -217,8 +217,8 @@ def get_config(model, algorithm_name):
         dataflow=model.get_data(),
         model=model(),
         callbacks=[
-            ModelSaver(max_to_keep=20, keep_freq=2),
-            ScheduledHyperParamSetter('learning_rate', [(10, 1e-5), (20, 1e-6)])
+            ModelSaver(max_to_keep=20, keep_checkpoint_every_n_hours=2),
+            ScheduledHyperParamSetter('learning_rate', [(75, 1e-4), (150, 1e-5), (300,1e-6)])
         ],
         extra_callbacks=[
             MovingAverageSummary(),
@@ -226,7 +226,7 @@ def get_config(model, algorithm_name):
             MergeAllSummaries(),
             RunUpdateOps()
         ],
-        max_epoch=3000,
+        max_epoch=400,
     )
 
 
@@ -323,7 +323,7 @@ def evaluate_random(model_path, model, algo_name):
     correct = 0
     total = 0
     BATCH_SIZE = 64
-    NUM_BATCHES = 50000
+    #NUM_BATCHES = 50000
 
     pred = OfflinePredictor(PredictConfig(
             session_init=get_model_loader(model_path),
@@ -349,8 +349,8 @@ def evaluate_random(model_path, model, algo_name):
             else:
                 train_data[gt].append(embedding[i])
         offset += 1
-        if offset == NUM_BATCHES:
-            break
+        #if offset == NUM_BATCHES:
+        #    break
 
     total_tr_data = 0 
     for label in train_data:
@@ -402,6 +402,7 @@ if __name__ == '__main__':
     parser.add_argument('--visualize', help='export embeddings into an image', action='store_true')
     parser.add_argument('--dim', help='dimensionality of the embedding space', type=int)
     parser.add_argument('--evaluate', help = 'compute accuracy', action='store_true')
+    parser.add_argument('--modelname', help = 'model directory name', type=str)
     args = parser.parse_args()
 
     ALGO_CONFIGS = {"siamese": SiameseModel,
@@ -409,7 +410,11 @@ if __name__ == '__main__':
                     "triplet": TripletModel,
                     "softtriplet": SoftTripletModel}
 
-    logger.auto_set_dir(name=args.algorithm)
+    if args.modelname:
+        logger.auto_set_dir(name=args.modelname)
+    else:
+        logger.auto_set_dir(name=args.algorithm)
+    #logger.auto_set_dir(name='softtriplet0830-145950')
 
     if args.dim:
         embed_dim = args.dim
@@ -424,5 +429,6 @@ if __name__ == '__main__':
             config = get_config(ALGO_CONFIGS[args.algorithm], args.algorithm)
             if args.load:
                 config.session_init = SaverRestore(args.load)
+                SimpleTrainer(config).train()
             else:
                 SimpleTrainer(config).train()

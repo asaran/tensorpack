@@ -13,7 +13,7 @@ from genome import Dataset
 import random
 
 def get_test_data(pathFile,batch=64):
-    ds = Dataset(pathFile, 'test')
+    ds = Dataset(pathFile, 'test', shuffle=True)
     ds = AugmentImageComponent(ds, [imgaug.Resize((224, 224))])
     ds = BatchData(ds, batch)
     return ds
@@ -47,7 +47,7 @@ class DatasetPairs(Dataset):
     but then the positives pairs would be really rare (p=0.1).
     """
     def __init__(self, pathFile, train_or_test):
-        super(DatasetPairs, self).__init__(pathFile, train_or_test, shuffle=False)
+        super(DatasetPairs, self).__init__(pathFile, train_or_test, shuffle=True)
         # now categorize these digits
         self.img_dict, self.bb_dict = get_digits_by_label(self.images, self.labels, self.bb)
         assert(len(self.img_dict)==len(self.bb_dict))
