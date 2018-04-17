@@ -120,7 +120,7 @@ class EmbeddingModel(ModelDesc):
         elif optimizer=='Momentum':
             return tf.train.MomentumOptimizer(lr)
         elif optimizer=='RMSProp':
-            return tf.train.RMSPropOptimizer(lr)
+            return tf.train.RMSPropOptimizer(lr, momentum=0.5)
 
 
 class SiameseModel(EmbeddingModel):

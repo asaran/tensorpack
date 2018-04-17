@@ -16,6 +16,8 @@ import random
 from spatial_relations_CLEVR_data import get_test_data, DatasetPairs, DatasetTriplets
 
 embed_dim = 2
+optimizer = "SGD"
+learning_rate = 1e-3
 
 MATPLOTLIB_AVAIBLABLE = False
 try:
@@ -31,6 +33,7 @@ except ImportError:
 
 class EmbeddingModel(ModelDesc):
     global embed_dim
+    global optimizer
     def embed(self, x, p, nfeatures=embed_dim):
 
         """Embed all given tensors into an nfeatures-dim space.  """
@@ -108,8 +111,17 @@ class EmbeddingModel(ModelDesc):
         return embeddings
 
     def _get_optimizer(self):
-        lr = symbf.get_scalar_var('learning_rate', 1e-5, summary=True)
-        return tf.train.GradientDescentOptimizer(lr)
+        global learning_rate
+        lr = symbf.get_scalar_var('learning_rate', learning_rate, summary=True)
+        if optimizer=='SGD':
+            return tf.train.GradientDescentOptimizer(lr)
+        elif optimizer=='Adam':
+            return tf.train.AdamOptimizer(lr)
+        elif optimizer=='Momentum':
+            return tf.train.MomentumOptimizer(lr)
+        elif optimizer=='RMSProp':
+            return tf.train.RMSPropOptimizer(lr, momentum=0.5)
+
 
 
 class SiameseModel(EmbeddingModel):
@@ -218,7 +230,7 @@ def get_config(model, algorithm_name):
         model=model(),
         callbacks=[
             ModelSaver(max_to_keep=20, keep_checkpoint_every_n_hours=2),
-            ScheduledHyperParamSetter('learning_rate', [(75, 1e-6), (150, 1e-7), (300,1e-8)])
+            #ScheduledHyperParamSetter('learning_rate', [(15, 1e-4), (25, 1e-3), (100,1e-4)])
         ],
         extra_callbacks=[
             MovingAverageSummary(),
@@ -247,7 +259,7 @@ def visualize(model_path, model, algo_name):
     labels = np.zeros((BATCH_SIZE * NUM_BATCHES)) # true labels
 
     # get only the embedding model data (genome test)
-    ds = get_test_data('/media/internal/asaran/CLEVR/data/test_relations.json')
+    ds = get_test_data('/media/internal/asaran/CLEVR/test_relations.json')
     ds.reset_state()
 
     for offset, dp in enumerate(ds.get_data()):
@@ -393,6 +405,8 @@ def evaluate_random(model_path, model, algo_name):
 
 if __name__ == '__main__':
     global embed_dim
+    global optimizer
+    global learning_rate
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.')
     parser.add_argument('--load', help='load model')
@@ -402,6 +416,8 @@ if __name__ == '__main__':
     parser.add_argument('--dim', help='dimensionality of the embedding space', type=int)
     parser.add_argument('--evaluate', help = 'compute accuracy', action='store_true')
     parser.add_argument('--modelname', help = 'model directory name', type=str)
+    parser.add_argument('--optimizer', help = 'Optimizer', type=str)
+    parser.add_argument('--lr', help='learning rate', type=float)
     args = parser.parse_args()
 
     ALGO_CONFIGS = {"siamese": SiameseModel,
@@ -417,6 +433,12 @@ if __name__ == '__main__':
 
     if args.dim:
         embed_dim = args.dim
+
+    if args.optimizer:
+        optimizer = args.optimizer
+
+    if args.lr:
+        learning_rate = args.lr 
 
     with change_gpu(args.gpu):
         if args.visualize:
