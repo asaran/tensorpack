@@ -89,3 +89,9 @@ examples/SimilarityLearning/data/*
 
 # Train Log
 examples/SimilarityLearning/train_log/*
+
+# Common CNN models
+examples/SimilarityLearning/models/*
+
+# pre-trained features
+examples/SimilarityLearning/features/*
