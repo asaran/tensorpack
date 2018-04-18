@@ -82,7 +82,9 @@ def main(hparams):
             feats = feats.reshape(feature_dim)
             #print(len(feat_fc6))
             
-            feats_dict[loc] = feats
+            local_loc = loc.split('/')
+            local_loc = local_loc[-1]
+            feats_dict[local_loc] = feats
        
         pkl.dump(feats_dict, open(write_file,'wb'))
 
@@ -93,7 +95,7 @@ if __name__ == '__main__':
     PARSER.add_argument('--model', type=str, default='AlexNet', help='type of deep model used')
     PARSER.add_argument('--feature-type', type=str, default='fc7', help='feature layer name for which activations are being extracted')
     PARSER.add_argument('--feature-dim', type=int, default=4096, help='dimension of the feature being extracted')
-    PARSER.add_argument('--input-data', type=str, default='/home/siml/Documents/spatial-relations/tensorpack_old/examples/SimilarityLearning/data/', help='file path used as input to the network')
+    PARSER.add_argument('--input-data', type=str, default='/home/siml/Documents/spatial-relations/tensorpack_old/examples/SimilarityLearning/data/AMT/', help='file path used as input to the network')
     PARSER.add_argument('--save-dir', type=str, default='/home/siml/Documents/spatial-relations/tensorpack_old/examples/SimilarityLearning/features/', help='directory where computed features will be saved')
 
     HPARAMS = PARSER.parse_args()

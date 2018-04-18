@@ -22,24 +22,24 @@ def main(hparams):
         reader = csv.reader(infile, delimiter=",")
         header_row = next(reader) 
         img_idx = header_row.index('Input.image_url')
-        approve_idx = header_row.index('Approve')
+        #approve_idx = header_row.index('Approve')
         bb_idx = header_row.index('Answer.annotation_data')
         for row in reader:
             bbs = literal_eval(row[bb_idx])
             empty_dict = not(bool(bbs))
-            if(not empty_dict and row[approve_idx]=='x'):
+            if(not empty_dict): # and row[approve_idx]=='x'):
                 img_url = row[img_idx]
                 im = img_url.split('/')
                 img_name = im[-1]
                 if(img_name not in imgs):
                     imgs.append(img_name)
-                    f.write('/home/siml/Documents/spatial-relations/tensorpack_old/examples/SimilarityLearning/data/imgs/'+ img_name + "\n")
+                    f.write('/home/siml/Documents/spatial-relations/tensorpack_old/examples/SimilarityLearning/data/AMT/imgs/'+ img_name + "\n")
     f.close()
 
 if __name__ == '__main__':
     PARSER = ArgumentParser()
-    PARSER.add_argument('--input-hits-dir', type=str, default='/home/siml/Documents/spatial-relations/AMT-spatial-relations/VerifiedHITS/',help='directory containing approved CSVs')
-    PARSER.add_argument('--save-file', type=str, default='../../../data/amt_data.txt', help='directory where input data for the network should be written')
+    PARSER.add_argument('--input-hits-dir', type=str, default='/home/siml/Documents/spatial-relations/AMT-spatial-relations/HITS/',help='directory containing approved CSVs')
+    PARSER.add_argument('--save-file', type=str, default='../../../data/AMT/amt_data.txt', help='directory where input data for the network should be written')
 
     HPARAMS = PARSER.parse_args()
     main(HPARAMS)

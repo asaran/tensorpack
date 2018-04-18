@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# File: sun09.py
+# File: amt.py
 # Author: Akanksha Saran <asaran@cs.utexas.edu>
 
 import os
@@ -10,6 +10,7 @@ from six.moves import range, zip, map
 import cv2
 import json
 import random
+import pickle as pkl
 
 from tensorpack.utils import logger
 from tensorpack.utils.fs import download, get_dataset_path
@@ -20,10 +21,9 @@ __all__ = ['dataset']
 
 class Dataset(RNGDataFlow):
     """
-    Produces [image, label] in MNIST dataset,
-    image is 28x28 in the range [0,1], label is an int.
+    Produces [feature, bb, label] in AMT annotated dataset,
+    features are 4096x1 in the range [0,1], bb are float, label is an int.
     """
-
     def __init__(self, pathfile, train_or_test, shuffle=False):
         """
         Args:
@@ -35,11 +35,11 @@ class Dataset(RNGDataFlow):
         self.name = train_or_test
         self.shuffle = shuffle
 
-
         with open(pathfile) as datafile:
             data = json.load(datafile)
         
-        self.images = []
+        #self.images = []
+        self.features = []
         self.labels = []
         self.bb = []
 
@@ -48,14 +48,19 @@ class Dataset(RNGDataFlow):
             #self.rng.shuffle(idxs)
             random.shuffle(idxs)
 
+        feats = pkl.load(data[0]['feat_path'])
+
         for k in idxs:
             element = data[k]
-            im = cv2.imread(element['img_path'], cv2.IMREAD_COLOR)
-            assert im is not None, element['img_path']
-            if im.ndim == 2:
-                im = np.expand(element['img_path'],2).repeat(3,2)
-            im = cv2.resize(im,(224,224))
-            self.images.append(im)
+            #im = cv2.imread(element['img_path'], cv2.IMREAD_COLOR)
+            #assert im is not None, element['img_path']
+            #if im.ndim == 2:
+            #    im = np.expand(element['img_path'],2).repeat(3,2)
+            #im = cv2.resize(im,(224,224))
+            #self.images.append(im)
+
+            img_name = element['img_name']
+            self.features.append(feats[img_name])
             self.labels.append(int(element['label']))
             self.bb.append(np.array(element['bb']))
 
@@ -69,7 +74,7 @@ class Dataset(RNGDataFlow):
             random.shuffle(idxs)
 
         for k in idxs:
-            yield [self.images[k], self.bb[k], self.labels[k]]
+            yield [self.features[k], self.bb[k], self.labels[k]]
 
 if __name__ == '__main__':
     ds = Dataset('/home/asaran/research/tensorpack/examples/SimilarityLearning/data/genome_train.json', 'train',
