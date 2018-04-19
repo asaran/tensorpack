@@ -97,4 +97,4 @@ class DatasetTriplets(DatasetPairs):
             ab = self.pick2(pick_label)
             c = self.pick(pick_other)
 
-            yield [ab[0], ab[1], ab[2], ab[3s], c[0], c[1]]
+            yield [ab[0], ab[1], ab[2], ab[3], c[0], c[1]]
