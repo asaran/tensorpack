@@ -13,7 +13,7 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import random
 
-from spatial_relations_bb_data import get_test_data, DatasetPairs, DatasetTriplets
+from spatial_relations_bb_cnn_data import get_test_data, DatasetPairs, DatasetTriplets
 
 embed_dim = 2
 optimizer = "SGD"
@@ -34,16 +34,30 @@ except ImportError:
 class EmbeddingModel(ModelDesc):
     global embed_dim
     global optimizer
-    def embed(self, x, nfeatures=embed_dim):
-
+    def embed(self, x, b, nfeatures=embed_dim):
+        #print(len(x))
+        #print(len(b))
+        #print b
         """Embed all given tensors into an nfeatures-dim space.  """
         list_split = 0
         if isinstance(x, list):
             list_split = len(x)
             x = tf.concat(x, 0)
 
-        print('Printing x..')
-        print(x.get_shape())
+        list_split = 0
+        if isinstance(b, list):
+            list_split = len(b)
+            b = tf.concat(b, 0)
+
+        #print(x.shape)
+        #print(b.shape)
+        #print b
+        f=tf.concat(axis=1, values=[x,b])
+        #f = np.concatenate((x,b), axis=1)
+        print(f.shape)
+
+        #print('Printing x..')
+        #print(x.get_shape())
         
         with slim.arg_scope([slim.layers.fully_connected], weights_regularizer=slim.l2_regularizer(1e-5)):
             """
@@ -92,25 +106,25 @@ class EmbeddingModel(ModelDesc):
 class SiameseModel(EmbeddingModel):
     @staticmethod
     def get_data():
-        ds = DatasetPairs('data/genome_train.json','train')
+        ds = DatasetPairs('data/amt_train.json','train')
         #ds = AugmentImageComponent(ds, [imgaug.Resize((224, 224))])
         ds = BatchData(ds, 64 // 2)
         return ds
 
     def _get_inputs(self):
         return [InputDesc(tf.float32, (None, 4096), 'input'),
-                InputDesc(tf.int32, (None, 16), 'bb'),
+                InputDesc(tf.float32, (None, 16), 'bb'),
                 InputDesc(tf.float32, (None, 4096), 'input_y'),
-                InputDesc(tf.int32, (None, 16), 'bb_y'),
+                InputDesc(tf.float32, (None, 16), 'bb_y'),
                 InputDesc(tf.int32, (None,), 'label')]
 
     def _build_graph(self, inputs):
         # get inputs
         feat_x, bb_x, feat_y, bb_y, label = inputs
         # embed them
-        x = np.concatenate((feat_x,bb_x), axis=1) #feat_x + bb_x
-        y = np.concatenate((feat_y,bb_y), axis=1) #feat_y + bb_y
-        x_embed, y_embed = self.embed([x, y])
+        #x = np.concatenate((feat_x,bb_x), axis=1) #feat_x + bb_x
+        #y = np.concatenate((feat_y,bb_y), axis=1) #feat_y + bb_y
+        x_embed, y_embed = self.embed([feat_x, feat_y], [bb_x, bb_y])
 
         # tag the embedding of 'input' with name 'emb', just for inference later on
         with tf.variable_scope(tf.get_variable_scope(), reuse=True):
@@ -130,10 +144,10 @@ class CosineModel(SiameseModel):
         feat_x, bb_x = x
         feat_y, bb_y = y
 
-        x_ = np.concatenate((feat_x,bb_x), axis=1) #feat_x + bb_x
-        y_ = np.concatenate((feat_y,bb_y), axis=1) #feat_y + bb_y
+        #x_ = np.concatenate((feat_x,bb_x), axis=1) #feat_x + bb_x
+        #y_ = np.concatenate((feat_y,bb_y), axis=1) #feat_y + bb_y
 
-        x_embed, y_embed = self.embed([x_, y_])
+        x_embed, y_embed = self.embed([feat_x, feat_y],[bb_x, bb_y])
 
         with tf.variable_scope(tf.get_variable_scope(), reuse=True):
             tf.identity(self.embed(inputs[0], inputs[1]), name="emb")
@@ -146,18 +160,18 @@ class CosineModel(SiameseModel):
 class TripletModel(EmbeddingModel):
     @staticmethod
     def get_data():
-        ds = DatasetTriplets('data/genome_train.json','train')
+        ds = DatasetTriplets('data/amt_train.json','train')
         #ds = AugmentImageComponent(ds, [imgaug.Resize((224, 224))])
         ds = BatchData(ds, 64 // 3)
         return ds
 
     def _get_inputs(self):
         return [InputDesc(tf.float32, (None, 4096), 'input'),
-                InputDesc(tf.int32, (None, 16), 'bb'),
+                InputDesc(tf.float32, (None, 16), 'bb'),
                 InputDesc(tf.float32, (None, 4096), 'input_p'),
-                InputDesc(tf.int32, (None,16), 'bb_p'),
+                InputDesc(tf.float32, (None,16), 'bb_p'),
                 InputDesc(tf.float32, (None, 4096), 'input_n'),
-                InputDesc(tf.int32, (None, 16), 'bb_n')
+                InputDesc(tf.float32, (None, 16), 'bb_n')
                 ]
 
     def loss(self, a, p, n):
@@ -171,10 +185,12 @@ class TripletModel(EmbeddingModel):
         #bb_a = tf.scalar_mul(224,bb_a)
         #bb_p = tf.scalar_mul(224,bb_p)
         #bb_n = tf.scalar_mul(224,bb_n)
-        a = np.concatenate((feat_a,bb_a), axis=1) #feat_a + bb_a
-        p = np.concatenate((feat_p,bb_p), axis=1) #feat_p + bb_p
-        n = np.concatenate((feat_n,bb_n), axis=1) #feat_n + bb_n
-        a_embed, p_embed, n_embed = self.embed([a, p, n], embed_dim)
+        #a = feat_a + bb_a  #TODO: bb being read as an int even though stored as a float???
+        #print(feat_a)
+        #a = np.concatenate((feat_a,bb_a), axis=1) #feat_a + bb_a
+        #p = np.concatenate((feat_p,bb_p), axis=1) #feat_p + bb_p
+        #n = np.concatenate((feat_n,bb_n), axis=1) #feat_n + bb_n
+        a_embed, p_embed, n_embed = self.embed([feat_a, feat_p, feat_n], [bb_a, bb_p, bb_n], embed_dim)
 
         with tf.variable_scope(tf.get_variable_scope(), reuse=True):
             tf.identity(self.embed(inputs[0], inputs[1], embed_dim), name="emb")
@@ -233,14 +249,14 @@ def visualize(model_path, model, algo_name):
     labels = np.zeros((BATCH_SIZE * NUM_BATCHES)) # true labels
 
     # get only the embedding model data (genome test)
-    ds = get_test_data('data/genome_test.json')
+    ds = get_test_data('data/amt_test.json')
     ds.reset_state()
 
     for offset, dp in enumerate(ds.get_data()):
-        img, bb, label = dp
+        feat, bb, label = dp
         
         #TODO: verify input format
-        prediction = pred([img, bb])[0]
+        prediction = pred([feat, bb])[0]
         embed[offset * BATCH_SIZE:offset * BATCH_SIZE + BATCH_SIZE, ...] = prediction
         # TODO: enumerate label and color it accordingly
         #images[offset * BATCH_SIZE:offset * BATCH_SIZE + BATCH_SIZE, ...] = img
@@ -260,13 +276,27 @@ def visualize(model_path, model, algo_name):
     ax.axis('off')
 
     # dictionary of labels
-    relation_labels = {0:'at', 1:'along', 2:'across', 3:'near/beside', 4:'around', 5:'on top of', 6:'side of', 7:'in/inside', 
-            8:'over', 9:'left of', 10:'under/below', 11:'by', 12:'bottom', 13:'outside', 14:'on', 15:'right of'}
+    #relation_labels = {0:'at', 1:'along', 2:'across', 3:'near/beside', 4:'around', 5:'on top of', 6:'side of', 7:'in/inside', 
+    #        8:'over', 9:'left of', 10:'under/below', 11:'by', 12:'bottom', 13:'outside', 14:'on', 15:'right of'}
+    relation_labels = { 
+        0:'on',
+        1:'in',
+        2:'near',
+        3:'beside',
+        4:'next to',
+        5:'to the left of',
+        6:'to the right of',
+        7:'below',
+        8:'above',
+        9:'at',
+        10:'behind',
+        11:'on top of'
+    }
     circles = []
     classes = []
 
     # total number of labels
-    N = 16
+    N = 12
     # define the colormap
     cmap = plt.cm.jet
     # extract all colors from the .jet map
@@ -278,7 +308,7 @@ def visualize(model_path, model, algo_name):
     ys = [i+x+(i*x)**2 for i in range(N)]
     #c = cm.rainbow(np.linspace(0, 1, len(ys)))
     c = ['r','b', 'c', 'g','yellow','blueviolet','lightblue','darkgreen','orange','mediumvioletred','lightcoral',
-            'olive','brown','dimgray','steelblue','k']
+            'olive']#,'brown','dimgray','steelblue','k']
 
     for i in relation_labels:
         circles.append(mpatches.Circle((0,0),1,color=c[i]))
@@ -318,7 +348,7 @@ def evaluate_random(model_path, model, algo_name):
             output_names=['emb']))
 
     # get train data
-    dt = get_test_data('data/genome_train.json')
+    dt = get_test_data('data/amt_train.json')
     dt.reset_state()
     print('loaded training data')
 
@@ -344,7 +374,7 @@ def evaluate_random(model_path, model, algo_name):
         total_tr_data += len(train_data[label])
     print('total training data: ' + str(total_tr_data))
 
-    ds = get_test_data('data/genome_test.json')
+    ds = get_test_data('data/amt_test.json')
     ds.reset_state()
     print('loaded test data')
 

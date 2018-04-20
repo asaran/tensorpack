@@ -74,7 +74,7 @@ def main(hparams):
 
         feats_dict = {}
         for loc in test_image_names:
-            print(loc)
+            #print(loc)
             img = caffe.io.load_image(loc);
             net.blobs['data'].data[...] = transformer.preprocess('data', img);
             net.forward();
@@ -84,7 +84,9 @@ def main(hparams):
             
             local_loc = loc.split('/')
             local_loc = local_loc[-1]
+            print(local_loc)
             feats_dict[local_loc] = feats
+            #print write_file
        
         pkl.dump(feats_dict, open(write_file,'wb'))
 

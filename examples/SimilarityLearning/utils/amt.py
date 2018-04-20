@@ -48,7 +48,9 @@ class Dataset(RNGDataFlow):
             #self.rng.shuffle(idxs)
             random.shuffle(idxs)
 
-        feats = pkl.load(data[0]['feat_path'])
+        #print(data[0]['feat_path'])
+        feats = pkl.load(open(data[0]['feat_path'],'rb'))
+        #print(feats)
 
         for k in idxs:
             element = data[k]
@@ -77,7 +79,7 @@ class Dataset(RNGDataFlow):
             yield [self.features[k], self.bb[k], self.labels[k]]
 
 if __name__ == '__main__':
-    ds = Dataset('/home/asaran/research/tensorpack/examples/SimilarityLearning/data/genome_train.json', 'train',
+    ds = Dataset('/home/asaran/research/tensorpack/examples/SimilarityLearning/data/amt_train.json', 'train',
                   shuffle=True)
     ds.reset_state()
     for k in ds.get_data():

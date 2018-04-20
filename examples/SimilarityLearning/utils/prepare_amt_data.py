@@ -96,18 +96,19 @@ def main(hparams):
                     obj_bb = bbs[0]
                     subj_bb = bbs[1]
 
-                    obj_bb_list = [int(obj_bb['left']/width), int(obj_bb['top']/height), int((obj_bb['left']+obj_bb['width'])/width), int(obj_bb['top']/height), \
-                                   int((obj_bb['left']+obj_bb['width'])/width), int((obj_bb['top']+obj_bb['height'])/height), int(obj_bb['left']/width), int((obj_bb['top']+obj_bb['height'])/height)]
-                    subj_bb_list = [int(subj_bb['left']/width), int(subj_bb['top']/height), int((subj_bb['left']+subj_bb['width'])/width), int(subj_bb['top']/height), \
-                                    int((subj_bb['left']+subj_bb['width'])/width), int((subj_bb['top']+subj_bb['height'])/height), int(subj_bb['left']/width), int((subj_bb['top']+subj_bb['height'])/height)]
+                    obj_bb_list = [ (obj_bb['left']/float(width)),  (obj_bb['top']/float(height)),  ((obj_bb['left']+obj_bb['width'])/float(width)),  (obj_bb['top']/float(height)), \
+                                    ((obj_bb['left']+obj_bb['width'])/float(width)),  ((obj_bb['top']+obj_bb['height'])/float(height)),  (obj_bb['left']/float(width)),  ((obj_bb['top']+obj_bb['height'])/float(height))]
+                    subj_bb_list = [ (subj_bb['left']/float(width)),  (subj_bb['top']/float(height)),  ((subj_bb['left']+subj_bb['width'])/float(width)),  (subj_bb['top']/float(height)), \
+                                     ((subj_bb['left']+subj_bb['width'])/float(width)),  ((subj_bb['top']+subj_bb['height'])/float(height)),  (subj_bb['left']/float(width)),  ((subj_bb['top']+subj_bb['height'])/float(height))]
 
                     bb_list = obj_bb_list + subj_bb_list
+                    #print(type(bb_list[0]))
                     label = row[spatial_relation_idx]
 
                     data_dict = {}
                     data_dict['img_name'] = img_name
                     data_dict['bb'] = bb_list
-                    data_dict['label'] = label
+                    data_dict['label'] = relation_dict[label]
                     data_dict['feat_path'] = feats_path
 
                     if(img_name in training_imgs):
@@ -128,7 +129,7 @@ def main(hparams):
 
 if __name__ == '__main__':
     PARSER = ArgumentParser()
-    PARSER.add_argument('--feats-path', type=str, default='/home/siml/Documents/spatial-relations/tensorpack_old/examples/SimilarityLearning/features/VGGNet/fc7/amt.pkl',help='directory containing pretrained CNN features')
+    PARSER.add_argument('--feats-path', type=str, default='/home/siml/Documents/spatial-relations/tensorpack_old/examples/SimilarityLearning/features/VGGNet/fc7/amt_data.pkl',help='directory containing pretrained CNN features')
     PARSER.add_argument('--input-hits-dir', type=str, default='/home/siml/Documents/spatial-relations/AMT-spatial-relations/HITS/',help='directory containing approved CSVs')
     PARSER.add_argument('--img-dir', type=str, default='/home/siml/Documents/spatial-relations/tensorpack_old/examples/SimilarityLearning/data/AMT/imgs/',help='directory containing approved CSVs')
     PARSER.add_argument('--save-dir', type=str, default='/home/siml/Documents/spatial-relations/tensorpack_old/examples/SimilarityLearning/data/AMT/', help='directory where input data for the network should be written')

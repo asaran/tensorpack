@@ -9,7 +9,7 @@ import numpy as np
 from tensorpack.dataflow import BatchData
 import sys
 sys.path.append('utils/')
-from genome import Dataset
+from amt import Dataset
 import random
 
 num_relations = 12
@@ -57,8 +57,6 @@ class DatasetPairs(Dataset):
         # now categorize these digits
         self.feat_dict, self.bb_dict = get_digits_by_label(self.features, self.labels, self.bb)
         assert(len(self.feat_dict)==len(self.bb_dict))
-        #for i in range(len(self.img_dict)):
-        #    print(str(i)+': '+str(len(self.img_dict[i])))
 
     def pick(self, label):
         #print(label)
