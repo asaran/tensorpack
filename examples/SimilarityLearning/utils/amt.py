@@ -70,7 +70,7 @@ class Dataset(RNGDataFlow):
         return len(self.labels)
     
     def get_data(self):
-        idxs = np.arange(len(self.images))
+        idxs = np.arange(len(self.features))
         if self.shuffle:
             #self.rng.shuffle(idxs)
             random.shuffle(idxs)

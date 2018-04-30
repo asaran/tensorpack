@@ -74,10 +74,10 @@ class EmbeddingModel(ModelDesc):
             net = slim.layers.flatten(net, scope='flatten5')
             net = slim.layers.fully_connected(net, 4096, scope='fc6')
             """
-            net = slim.layers.fully_connected(x, 128, scope='fc1')
-            net = slim.layers.dropout(net, 0.5, scope='dropout1')
-            net = slim.layers.fully_connected(net, 64, scope='fc2')
-            net = slim.layers.dropout(net, 0.5, scope='dropout2')
+            net = slim.layers.fully_connected(f, 32, scope='fc1')
+            #net = slim.layers.dropout(net, 0.5, scope='dropout1')
+            net = slim.layers.fully_connected(net, 16, scope='fc2')
+            #net = slim.layers.dropout(net, 0.5, scope='dropout2')
             print('Printing fc shape...')
             print(net.get_shape())
             embeddings = slim.layers.fully_connected(net, nfeatures, activation_fn=None, scope='fc3')
@@ -162,6 +162,7 @@ class TripletModel(EmbeddingModel):
     def get_data():
         ds = DatasetTriplets('data/amt_train.json','train')
         #ds = AugmentImageComponent(ds, [imgaug.Resize((224, 224))])
+        print(ds.data_dict)
         ds = BatchData(ds, 64 // 3)
         return ds
 
@@ -228,7 +229,7 @@ def get_config(model, algorithm_name):
             MergeAllSummaries(),
             RunUpdateOps()
         ],
-        max_epoch=400,
+        max_epoch=10000,#400,
     )
 
 
@@ -368,7 +369,8 @@ def evaluate_random(model_path, model, algo_name):
         #if offset == NUM_BATCHES:
         #    break
 
-    total_tr_data = 0 
+    total_tr_data = 0
+    #print train_data[0][0], train_data[1][20]
     for label in train_data:
         print(str(label) + ': '+ str(len(train_data[label])))
         total_tr_data += len(train_data[label])
@@ -404,6 +406,7 @@ def evaluate_random(model_path, model, algo_name):
                 correct += 1
             total += 1
 
+    print('total test data: ' + str(total))
     return correct, total
 
                                                                                                                                 
