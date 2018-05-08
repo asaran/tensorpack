@@ -14,8 +14,8 @@ import random
 
 num_relations = 12
 
-def get_test_data(pathFile,batch=64):
-    ds = Dataset(pathFile, 'test', shuffle=True)
+def get_test_data(pathFile, data_type = 'test', batch=64):
+    ds = Dataset(pathFile, data_type, shuffle=True)
     #ds = AugmentImageComponent(ds, [imgaug.Resize((224, 224))])
     ds = BatchData(ds, batch)
     return ds
@@ -23,6 +23,7 @@ def get_test_data(pathFile,batch=64):
 
 def get_digits_by_label(features, labels, bb):
     #img_data = []
+    global num_relations
     bb_data = []
     feature_data = []
     for clazz in range(0, num_relations):
@@ -68,7 +69,7 @@ class DatasetPairs(Dataset):
         idxs = random.sample(range(0,len(self.feat_dict[label])-1), 2)
         idx1 = idxs[0]
         idx2 = idxs[1]
-        return self.feat_dict[label][idx1].astype(np.float32), self.bb_dict[label][idx1], self.feat_dict[label][idx2].astype(np.float32), self.bb_dict[label][idx2]
+        return self.feat_dict[label][idx1].astype(np.float32), self.bb_dict[label][idx1].astype(np.float32), self.feat_dict[label][idx2].astype(np.float32), self.bb_dict[label][idx2].astype(np.float32)
 
     def get_data(self):
         while True:

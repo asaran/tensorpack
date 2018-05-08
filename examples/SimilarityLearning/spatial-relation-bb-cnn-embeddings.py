@@ -128,7 +128,7 @@ class SiameseModel(EmbeddingModel):
 
         # tag the embedding of 'input' with name 'emb', just for inference later on
         with tf.variable_scope(tf.get_variable_scope(), reuse=True):
-            tf.identity(self.embed(inputs[0]), name="emb")
+            tf.identity(self.embed(feat_x, bb_x), name="emb")
 
         # compute the actual loss
         cost, pos_dist, neg_dist = symbf.contrastive_loss(x_embed, y_embed, label, 5., extra=True, scope="loss")
